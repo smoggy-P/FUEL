@@ -277,6 +277,8 @@ void SDFMap::inputPointCloud(
   for (int i = 0; i < point_num; ++i) {
     auto& pt = points.points[i];
     pt_w << pt.x, pt.y, pt.z;
+    // filter nan points
+    if (isnan(pt_w[0]) || isnan(pt_w[1]) || isnan(pt_w[2])) continue;
     int tmp_flag;
     // Set flag for projected point
     if (!isInMap(pt_w)) {
@@ -293,8 +295,9 @@ void SDFMap::inputPointCloud(
         pt_w = (pt_w - camera_pos) / length * mp_->max_ray_length_ + camera_pos;
         if (pt_w[2] < 0.2) continue;
         tmp_flag = 0;
-      } else
+      } else{
         tmp_flag = 1;
+      }
     }
     posToIndex(pt_w, idx);
     vox_adr = toAddress(idx);

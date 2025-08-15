@@ -37,8 +37,8 @@ void MapROS::init() {
   node_.param("map_ros/show_all_map", show_all_map_, false);
   node_.param("map_ros/frame_id", frame_id_, string("world"));
 
-  proj_points_.resize(640 * 480 / (skip_pixel_ * skip_pixel_));
-  point_cloud_.points.resize(640 * 480 / (skip_pixel_ * skip_pixel_));
+  proj_points_.resize(4 * cx_ * cy_ / (skip_pixel_ * skip_pixel_));
+  point_cloud_.points.resize(4 * cx_ * cy_ / (skip_pixel_ * skip_pixel_));
   // proj_points_.reserve(640 * 480 / map_->mp_->skip_pixel_ / map_->mp_->skip_pixel_);
   proj_points_cnt = 0;
 
@@ -143,14 +143,6 @@ void MapROS::depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
     esdf_need_update_ = true;
     local_updated_ = false;
   }
-
-  auto t2 = ros::Time::now();
-  fuse_time_ += (t2 - t1).toSec();
-  max_fuse_time_ = max(max_fuse_time_, (t2 - t1).toSec());
-  fuse_num_ += 1;
-  if (show_occ_time_)
-    ROS_WARN("Fusion t: cur: %lf, avg: %lf, max: %lf", (t2 - t1).toSec(), fuse_time_ / fuse_num_,
-             max_fuse_time_);
 }
 
 void MapROS::cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg,
@@ -164,6 +156,19 @@ void MapROS::cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg,
   pcl::fromROSMsg(*msg, cloud);
   int num = cloud.points.size();
 
+  // transform point cloud to world frame
+  Eigen::Matrix3d camera_r = camera_q_.toRotationMatrix();
+  Eigen::Vector3d pt_cur, pt_world;
+  for (int i = 0; i < num; ++i) {
+    pt_cur(0) = cloud.points[i].z;
+    pt_cur(1) = -cloud.points[i].x;
+    pt_cur(2) = -cloud.points[i].y;
+    pt_world = camera_r * pt_cur + camera_pos_;
+    cloud.points[i].x = pt_world[0];
+    cloud.points[i].y = pt_world[1];
+    cloud.points[i].z = pt_world[2];
+  }
+
   map_->inputPointCloud(cloud, num, camera_pos_);
 
   if (local_updated_) {
@@ -176,9 +181,23 @@ void MapROS::cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg,
 void MapROS::proessDepthImage() {
   proj_points_cnt = 0;
 
+  // Safety check for depth image
+  if (!depth_image_ || depth_image_->empty()) {
+    ROS_WARN("Depth image is null or empty, skipping processing");
+    return;
+  }
+
   uint16_t* row_ptr;
   int cols = depth_image_->cols;
   int rows = depth_image_->rows;
+  
+  // Safety checks for image dimensions
+  if (cols <= 0 || rows <= 0) {
+    ROS_WARN("Invalid depth image dimensions: %dx%d", cols, rows);
+    return;
+  }
+
+  
   double depth;
   Eigen::Matrix3d camera_r = camera_q_.toRotationMatrix();
   Eigen::Vector3d pt_cur, pt_world;
@@ -200,14 +219,22 @@ void MapROS::proessDepthImage() {
       else if (depth < depth_filter_mindist_)
         continue;
 
-      pt_cur(0) = (u - cx_) * depth / fx_;
-      pt_cur(1) = (v - cy_) * depth / fy_;
-      pt_cur(2) = depth;
+      // Add occupied point
+      pt_cur(0) = depth;
+      pt_cur(1) = -(u - cx_) * depth / fx_;
+      pt_cur(2) = -(v - cy_) * depth / fy_;
       pt_world = camera_r * pt_cur + camera_pos_;
-      auto& pt = point_cloud_.points[proj_points_cnt++];
-      pt.x = pt_world[0];
-      pt.y = pt_world[1];
-      pt.z = pt_world[2];
+      
+      // Safety check for point cloud bounds
+      if (proj_points_cnt < point_cloud_.points.size()) {
+        auto& pt = point_cloud_.points[proj_points_cnt++];
+        pt.x = pt_world[0];
+        pt.y = pt_world[1];
+        pt.z = pt_world[2];
+      } else {
+        // ROS_WARN("Point cloud buffer overflow, skipping remaining points");
+        break;
+      }
     }
   }
 

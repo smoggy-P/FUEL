@@ -1,0 +1,23 @@
+<launch>
+  <!-- 加载配置文件 -->
+  <rosparam command="load" file="$(find trajectory_bridge)/config/trajectory_bridge.yaml" />
+  
+  <!-- 启动轨迹桥接节点 -->
+  <node name="trajectory_bridge" pkg="trajectory_bridge" type="trajectory_bridge_node" output="screen">
+    <!-- 参数从配置文件加载 -->
+  </node>
+  
+  <!-- 启动测试节点 -->
+  <node name="trajectory_bridge_tester" pkg="trajectory_bridge" type="test_bridge.py" output="screen">
+    <!-- 可以通过参数调整测试类型 -->
+    <param name="test_type" value="circle" /> <!-- circle, eight, line -->
+    <param name="test_duration" value="10.0" />
+    <param name="publish_rate" value="20.0" />
+  </node>
+  
+  <!-- 可选：启动 RViz 进行可视化 -->
+  <!-- 
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find trajectory_bridge)/config/trajectory_bridge.rviz" />
+  -->
+  
+</launch> 

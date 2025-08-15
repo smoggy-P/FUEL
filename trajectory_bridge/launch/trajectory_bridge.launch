@@ -1,0 +1,17 @@
+<launch>
+  <!-- Load configuration file -->
+  <rosparam command="load" file="$(find trajectory_bridge)/config/trajectory_bridge.yaml" />
+  
+  <!-- Trajectory Bridge Node -->
+  <node name="trajectory_bridge" pkg="trajectory_bridge" type="trajectory_bridge_node" output="screen">
+    
+    <!-- Parameters will be loaded from the config file -->
+    
+    <!-- Remap topics if needed -->
+    <!-- <remap from="planning/pos_cmd" to="your_pos_cmd_topic" /> -->
+    <!-- <remap from="planning/trajectory" to="your_trajectory_topic" /> -->
+    <!-- <remap from="agilicious/reference" to="your_reference_topic" /> -->
+    
+  </node>
+  
+</launch> 

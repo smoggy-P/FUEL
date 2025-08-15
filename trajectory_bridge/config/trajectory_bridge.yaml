@@ -1,0 +1,43 @@
+trajectory_bridge:
+  # 轨迹持续时间（秒）
+  trajectory_duration: 10.0
+  
+  # 采样频率（Hz）
+  sampling_rate: 100.0
+  
+  # 输出坐标系ID
+  output_frame_id: "world"
+  
+  # 是否启用jerk和snap计算
+  enable_jerk_snap: false
+  
+  # 话题名称配置
+  topics:
+    # 输入话题
+    pos_cmd: "planning/pos_cmd"
+    trajectory: "planning/trajectory"
+    
+    # 输出话题
+    reference: "agilicious/reference"
+  
+  # 轨迹处理参数
+  trajectory:
+    # 最小轨迹点数
+    min_points: 2
+    
+    # 最大缓冲区大小
+    max_buffer_size: 1000
+    
+    # 时间容差（秒）
+    time_tolerance: 0.01
+  
+  # 物理参数
+  physics:
+    # 重力加速度 (m/s^2)
+    gravity: 9.81
+    
+    # 无人机质量 (kg) - 用于推力计算
+    mass: 1.0
+    
+    # 最大推力 (N)
+    max_thrust: 20.0 

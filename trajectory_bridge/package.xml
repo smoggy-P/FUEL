@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package>
+  <name>trajectory_bridge</name>
+  <version>0.0.0</version>
+  <description>
+    Bridge package to convert FUEL trajectory messages to agilicious reference trajectory format
+  </description>
+  <maintainer email="user@todo.todo">User</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>quadrotor_msgs</build_depend>
+  <build_depend>agiros_msgs</build_depend>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>quadrotor_msgs</run_depend>
+  <run_depend>agiros_msgs</run_depend>
+
+</package> 
