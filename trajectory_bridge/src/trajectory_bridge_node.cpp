@@ -7,7 +7,7 @@ TrajectoryBridge::TrajectoryBridge(ros::NodeHandle& nh, ros::NodeHandle& nh_priv
     
     // Load parameters
     nh_private_.param("trajectory_duration", trajectory_duration_, 10.0);
-    nh_private_.param("sampling_rate", sampling_rate_, 1.0); // Hz
+    nh_private_.param("sampling_rate", sampling_rate_, 10.0); // Hz
     nh_private_.param("output_frame_id", output_frame_id_, std::string("world"));
     nh_private_.param("enable_jerk_snap", enable_jerk_snap_, false);
     
