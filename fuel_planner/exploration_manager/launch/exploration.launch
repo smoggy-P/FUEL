@@ -65,9 +65,9 @@
 
   </node>
 
-  <node pkg="trajectory_bridge" name="trajectory_bridge" type="trajectory_bridge_node" output="screen">
+  <!-- <node pkg="trajectory_bridge" name="trajectory_bridge" type="poscmd_to_twist.py" output="screen">
     
-  </node>
+  </node> -->
 
   <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
     <remap from="~odom" to="$(arg odom_topic)"/>        
