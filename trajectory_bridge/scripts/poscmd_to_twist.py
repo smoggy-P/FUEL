@@ -25,7 +25,7 @@ class PosCmdToTwist:
     def __init__(self):
         self.vel_in_body = rospy.get_param("~vel_in_body", False)
         self.output_frame_param = rospy.get_param("~output_frame", "")
-        qsize = int(rospy.get_param("~queue_size", 50))
+        qsize = int(rospy.get_param("~queue_size", 1))
 
         self.pub = rospy.Publisher(
             "/kingfisher/agiros_pilot/velocity_command", TwistStamped, queue_size=qsize
