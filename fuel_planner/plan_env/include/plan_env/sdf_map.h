@@ -10,6 +10,7 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <std_msgs/Float32.h>
 
 using namespace std;
 
@@ -62,6 +63,7 @@ public:
   void getUpdatedBox(Eigen::Vector3d& bmin, Eigen::Vector3d& bmax, bool reset = false);
   double getResolution();
   int getVoxelNum();
+  double getExplorationRate();
 
 private:
   void clearAndInflateLocalMap();
@@ -70,6 +72,8 @@ private:
   Eigen::Vector3d closetPointInMap(const Eigen::Vector3d& pt, const Eigen::Vector3d& camera_pt);
   template <typename F_get_val, typename F_set_val>
   void fillESDF(F_get_val f_get_val, F_set_val f_set_val, int start, int end, int dim);
+
+  ros::Publisher exploration_rate_pub_;
 
   unique_ptr<MapParam> mp_;
   unique_ptr<MapData> md_;
@@ -81,6 +85,8 @@ private:
 public:
   typedef std::shared_ptr<SDFMap> Ptr;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  void publishExplorationRate();
 };
 
 struct MapParam {

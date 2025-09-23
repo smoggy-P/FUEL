@@ -1,6 +1,7 @@
 #include "plan_env/sdf_map.h"
 #include "plan_env/map_ros.h"
 #include <plan_env/raycast.h>
+#include <std_msgs/Float32.h>
 
 namespace fast_planner {
 SDFMap::SDFMap() {
@@ -90,6 +91,8 @@ void SDFMap::initMap(ros::NodeHandle& nh) {
 
   caster_.reset(new RayCaster);
   caster_->setParams(mp_->resolution_, mp_->map_origin_);
+
+  exploration_rate_pub_ = nh.advertise<std_msgs::Float32>("/exploration_rate", 1, true);
 }
 
 void SDFMap::resetBuffer() {
@@ -345,6 +348,8 @@ void SDFMap::inputPointCloud(
         std::max(md_->occupancy_buffer_[adr] + log_odds_update, mp_->clamp_min_log_),
         mp_->clamp_max_log_);
   }
+
+  publishExplorationRate();
 }
 
 Eigen::Vector3d
@@ -480,6 +485,40 @@ double SDFMap::getResolution() {
 
 int SDFMap::getVoxelNum() {
   return mp_->map_voxel_num_[0] * mp_->map_voxel_num_[1] * mp_->map_voxel_num_[2];
+}
+
+double SDFMap::getExplorationRate() {
+  int total_voxels = getVoxelNum();
+  int explored_voxels = 0;
+  int occupied_voxels = 0;
+  
+  // 遍历所有体素
+  for (int x = 0; x < mp_->map_voxel_num_(0); ++x) {
+    for (int y = 0; y < mp_->map_voxel_num_(1); ++y) {
+      for (int z = 0; z < mp_->map_voxel_num_(2); ++z) {
+        int idx = toAddress(x, y, z);
+        
+        // 检查体素是否已被探索（不是未知状态）
+        if (md_->occupancy_buffer_[idx] > mp_->clamp_min_log_ - 1e-3) {
+          explored_voxels++;
+          
+          // 检查体素是否被占用
+          if (md_->occupancy_buffer_[idx] > mp_->min_occupancy_log_) {
+            occupied_voxels++;
+          }
+        }
+      }
+    }
+  }
+  
+  // 返回探索率：已探索体素（包括空闲和占用）占总体的比例
+  return total_voxels > 0 ? static_cast<double>(explored_voxels) / total_voxels : 0.0;
+}
+
+void SDFMap::publishExplorationRate() {
+  std_msgs::Float32 msg;
+  msg.data = getExplorationRate();
+  exploration_rate_pub_.publish(msg);
 }
 
 void SDFMap::getRegion(Eigen::Vector3d& ori, Eigen::Vector3d& size) {
