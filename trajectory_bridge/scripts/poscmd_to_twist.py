@@ -17,25 +17,40 @@ poscmd_to_twist.py
 
 import math
 import rospy
+import numpy as np
 from geometry_msgs.msg import TwistStamped, Vector3
 from std_msgs.msg import Header
 from quadrotor_msgs.msg import PositionCommand
+from nav_msgs.msg import Odometry
 
 class PosCmdToTwist:
     def __init__(self):
         self.vel_in_body = rospy.get_param("~vel_in_body", False)
         self.output_frame_param = rospy.get_param("~output_frame", "")
-        qsize = int(rospy.get_param("~queue_size", 1))
+        qsize = int(rospy.get_param("~queue_size", 50))
+
+        # 控制增益
+        self.kp = rospy.get_param("~kp", 0.5)
+        self.kd = rospy.get_param("~kd", 0.2)
 
         self.pub = rospy.Publisher(
             "/kingfisher/agiros_pilot/velocity_command", TwistStamped, queue_size=qsize
         )
-        self.sub = rospy.Subscriber(
+        self.sub_cmd = rospy.Subscriber(
             "/planning/pos_cmd", PositionCommand, self.cb, queue_size=qsize
         )
+        self.sub_odom = rospy.Subscriber(
+            "/drone/odom", Odometry, self.odom_cb, queue_size=1
+        )
 
-        rospy.loginfo("[poscmd_to_twist] vel_in_body=%s, output_frame='%s'",
-                      str(self.vel_in_body), self.output_frame_param if self.output_frame_param else "(auto)")
+        self.latest_odom = None
+
+        rospy.loginfo("[poscmd_to_twist] vel_in_body=%s, output_frame='%s' kp=%.2f kd=%.2f",
+                      str(self.vel_in_body), self.output_frame_param if self.output_frame_param else "(auto)",
+                      self.kp, self.kd)
+
+    def odom_cb(self, msg: Odometry):
+        self.latest_odom = msg
 
     @staticmethod
     def world_vel_to_body(vx, vy, vz, yaw):
@@ -51,14 +66,29 @@ class PosCmdToTwist:
         vx, vy, vz = float(msg.velocity.x), float(msg.velocity.y), float(msg.velocity.z)
         yaw, yaw_dot = float(msg.yaw), float(msg.yaw_dot)
 
+        # ========== PD 修正 ==========
+        if self.latest_odom is not None:
+            # 位置误差
+            ex = msg.position.x - self.latest_odom.pose.pose.position.x
+            ey = msg.position.y - self.latest_odom.pose.pose.position.y
+            ez = msg.position.z - self.latest_odom.pose.pose.position.z
+
+            # 当前实际速度
+            vx_real = self.latest_odom.twist.twist.linear.x
+            vy_real = self.latest_odom.twist.twist.linear.y
+            vz_real = self.latest_odom.twist.twist.linear.z
+
+            # 反馈项
+            vx += self.kp * ex - self.kd * vx_real
+            vy += self.kp * ey - self.kd * vy_real
+            vz += self.kp * ez - self.kd * vz_real
+
+        # 如果要在机体系输出
         if self.vel_in_body:
             vx, vy, vz = self.world_vel_to_body(vx, vy, vz, yaw)
 
         out = TwistStamped()
-        # stamp：沿用上游，兼容 /use_sim_time
         out.header = Header(stamp=msg.header.stamp)
-
-        # 选择 frame_id
         if self.output_frame_param:
             out.header.frame_id = self.output_frame_param
         else:

@@ -6,7 +6,7 @@
 
   <arg name="init_x" value="0"/>
   <arg name="init_y" value="0"/>
-  <arg name="init_z" value="1.0"/> 
+  <arg name="init_z" value="0"/> 
 
   <!-- topic of your odometry such as VIO or LIO -->
   <arg name="odom_topic" value="/drone/odom" />
@@ -65,7 +65,7 @@
 
   </node>
 
-  <node pkg="trajectory_bridge" name="trajectory_bridge" type="poscmd_to_reference.py" output="screen"></node>
+  <node pkg="trajectory_bridge" name="trajectory_bridge" type="poscmd_to_twist.py" output="screen"></node>
 
   <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
     <remap from="~odom" to="$(arg odom_topic)"/>        
@@ -75,7 +75,7 @@
   </node>
 
   <!-- use simulator -->
-  <!-- <include file="$(find exploration_manager)/launch/simulator.xml">
+  <include file="$(find exploration_manager)/launch/simulator.xml">
     <arg name="map_size_x_" value="$(arg map_size_x)"/>
     <arg name="map_size_y_" value="$(arg map_size_y)"/>
     <arg name="map_size_z_" value="$(arg map_size_z)"/>
@@ -87,6 +87,6 @@
     <arg name="odometry_topic" value="$(arg odom_topic)" />
     <arg name="c_num" value="0"/>
     <arg name="p_num" value="130"/>
-  </include> -->
+  </include>
 
 </launch>
